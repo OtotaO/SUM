@@ -42,6 +42,12 @@ def _tool(server, name):
     return server._tool_manager.get_tool(name).fn
 
 
+def _verify(server, **kwargs):
+    """verify is async (it rebuilds the state in a worker thread)."""
+    import asyncio
+    return asyncio.run(_tool(server, "verify")(**kwargs))
+
+
 # --------------------------------------------------------------------------
 # Tool registration
 # --------------------------------------------------------------------------
@@ -172,7 +178,7 @@ def test_attest_zero_triples_names_the_cli_reasons(server):
 
 
 def test_verify_rejects_non_dict_bundle(server):
-    result = _tool(server, "verify")(bundle="not a dict")
+    result = _verify(server, bundle="not a dict")
     assert result["error_class"] == "schema"
     assert result["ok"] is False
 
@@ -208,8 +214,8 @@ def test_verify_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
     downgrade; mirrors CanonicalCodec.import_bundle."""
     forged = _mint_attacker_ed25519_bundle(tmp_path)
     for strict in (True, False):
-        result = _tool(server, "verify")(
-            bundle=forged, signing_key="operator-key", strict=strict,
+        result = _verify(
+            server, bundle=forged, signing_key="operator-key", strict=strict,
         )
         assert result["ok"] is False, result
         assert result["error_class"] == "signature"
@@ -221,8 +227,8 @@ def test_verify_rejects_empty_signing_key(server, tmp_path):
     not "no key": otherwise the attacker's embedded-key bundle passes."""
     forged = _mint_attacker_ed25519_bundle(tmp_path)
     for strict in (True, False):
-        result = _tool(server, "verify")(
-            bundle=forged, signing_key="", strict=strict,
+        result = _verify(
+            server, bundle=forged, signing_key="", strict=strict,
         )
         assert result["ok"] is False, result
         assert result["error_class"] == "schema"
@@ -244,7 +250,7 @@ def test_verify_bind_rejects_hmac_strip_and_ed25519_resign(server, tmp_path):
 
 
 def test_verify_rejects_missing_canonical_tome(server):
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "state_integer": "1", "canonical_format_version": "1.0.0"
     })
     assert result["error_class"] == "schema"
@@ -252,7 +258,7 @@ def test_verify_rejects_missing_canonical_tome(server):
 
 
 def test_verify_rejects_unsupported_canonical_format(server):
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "",
         "state_integer": "1",
         "canonical_format_version": "0.0.0-future",
@@ -269,7 +275,7 @@ def test_verify_accepts_future_minor_version_under_1_x():
     # the schema gate (it'll fail later on state mismatch since
     # we put a fake state, which is fine — the test is only that
     # the schema gate accepts).
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "",
         "state_integer": "1",
         "canonical_format_version": "1.5.0",
@@ -282,7 +288,7 @@ def test_verify_accepts_future_minor_version_under_1_x():
 
 def test_verify_rejects_oversized_tome(server):
     from sum_engine_internal.mcp_server.server import MAX_TOME_CHARS
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "a" * (MAX_TOME_CHARS + 1),
         "state_integer": "1",
         "canonical_format_version": "1.0.0",
@@ -292,7 +298,7 @@ def test_verify_rejects_oversized_tome(server):
 
 def test_verify_rejects_oversized_state_integer(server):
     from sum_engine_internal.mcp_server.server import MAX_STATE_INTEGER_DIGITS
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "",
         "state_integer": "9" * (MAX_STATE_INTEGER_DIGITS + 1),
         "canonical_format_version": "1.0.0",
@@ -301,7 +307,7 @@ def test_verify_rejects_oversized_state_integer(server):
 
 
 def test_verify_rejects_non_string_state_integer(server):
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "",
         "state_integer": 12345,
         "canonical_format_version": "1.0.0",
@@ -310,7 +316,7 @@ def test_verify_rejects_non_string_state_integer(server):
 
 
 def test_verify_rejects_unsupported_prime_scheme(server):
-    result = _tool(server, "verify")(bundle={
+    result = _verify(server, bundle={
         "canonical_tome": "",
         "state_integer": "1",
         "canonical_format_version": "1.0.0",
@@ -454,7 +460,7 @@ def test_attest_produces_well_formed_bundle(attested_bundle):
 
 def test_verify_accepts_self_attested_bundle(server, attested_bundle):
     bundle = attested_bundle["bundle"]
-    result = _tool(server, "verify")(bundle=bundle)
+    result = _verify(server, bundle=bundle)
     assert result["ok"] is True, f"errors: {result.get('errors')}"
     assert "error_class" not in result
     assert result["axioms"] == attested_bundle["axioms"]
@@ -466,7 +472,7 @@ def test_verify_rejects_tampered_canonical_tome(server, attested_bundle):
     bundle["canonical_tome"] = (
         bundle["canonical_tome"].rstrip("\n") + "\nThe earth orbits sun.\n"
     )
-    result = _tool(server, "verify")(bundle=bundle)
+    result = _verify(server, bundle=bundle)
     assert result["ok"] is False
     assert result["error_class"] == "structural"
 
@@ -475,7 +481,7 @@ def test_verify_rejects_tampered_state_integer(server, attested_bundle):
     import copy
     bundle = copy.deepcopy(attested_bundle["bundle"])
     bundle["state_integer"] = "999"
-    result = _tool(server, "verify")(bundle=bundle)
+    result = _verify(server, bundle=bundle)
     assert result["ok"] is False
     assert result["error_class"] == "structural"
 

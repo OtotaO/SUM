@@ -44,8 +44,11 @@ that class means "the capability's backing dependency is not installed."
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from typing import Any
+
+from sum_engine_internal.mcp_server.args import OptionalText
 
 from sum_engine_internal.mcp_server.errors import (
     ErrorClass,
@@ -153,6 +156,43 @@ def _load_scorer(scorer: str) -> "tuple[Any, tuple[ErrorClass, str] | None]":
             f"scorer {scorer!r} unavailable: {type(exc).__name__} — nli "
             "needs pip install 'sum-engine[research,judge]'",
         )
+
+
+def _judge_cache_miss(exc: BaseException, scorer: str) -> "tuple[ErrorClass, str] | None":
+    """extractor_unavailable when exc is the offline judge cache miss, else None.
+
+    The judge models load on first score. The server runs offline unless
+    SUM_MCP_ALLOW_NETWORK=1 (it sets HF_HUB_OFFLINE), so with the pinned model
+    absent from the local Hugging Face cache, transformers raises OSError,
+    which callers saw as an internal error with no message. Only that case
+    is converted: an OSError while the model IS cached is still internal.
+    """
+    if not isinstance(exc, OSError) or os.environ.get("HF_HUB_OFFLINE") != "1":
+        return None
+    try:
+        from huggingface_hub import try_to_load_from_cache
+
+        from sum_engine_internal.research.meaning import local_judge
+    except ImportError:
+        return None
+    if scorer == "nli":
+        repo, rev = local_judge.DEFAULT_NLI_MODEL_ID, local_judge.DEFAULT_NLI_MODEL_REVISION
+    else:
+        repo, rev = local_judge.DEFAULT_MODEL_ID, local_judge.DEFAULT_MODEL_REVISION
+    try:
+        cached = try_to_load_from_cache(repo, "config.json", revision=rev)
+    except Exception:  # noqa: BLE001 - a cache probe must not mask the real error
+        return None
+    if isinstance(cached, str):
+        return None
+    return (
+        ErrorClass.EXTRACTOR_UNAVAILABLE,
+        f"the {scorer} judge model {repo} is not in the local Hugging Face "
+        "cache, and this server runs offline unless SUM_MCP_ALLOW_NETWORK=1. "
+        "Fetch it once with network access (for example, run "
+        f"`sum meaning-diff --scorer {scorer} SOURCE RENDERING` on any two "
+        "text files) or restart the server with SUM_MCP_ALLOW_NETWORK=1.",
+    )
 
 
 def _validate_prose(name: str, value: Any) -> "tuple[ErrorClass, str] | None":
@@ -277,6 +317,22 @@ def _public_jwks_of(private_jwk: dict, kid: str) -> dict:
     pub.setdefault("alg", "EdDSA")
     pub.setdefault("use", "sig")
     return {"keys": [pub]}
+
+
+class _SignerRefused(Exception):
+    """sign_jose_envelope refused the receipt (a kid that makes the protected
+    header longer than the verifiers take, or a payload over their limit).
+    The caller chose those values, so it is a schema error, with the reason."""
+
+
+def _sign(signer: Any, payload: dict, private_jwk: dict, kid: str) -> dict:
+    try:
+        return signer(payload, private_jwk=private_jwk, kid=kid)
+    except ValueError as exc:
+        # Only the signer's own two limits; a malformed key stays as it was.
+        if "; the limit is " not in str(exc):
+            raise
+        raise _SignerRefused(str(exc)) from exc
 
 
 def _classify_verify_error(exc: Exception) -> ErrorClass:
@@ -538,6 +594,9 @@ def register_meaning_tools(mcp: Any) -> None:
                 fields["judge_caveat"] = _EMBEDDING_CAVEAT
             return success_result("meaning_diff", t0, **fields)
         except Exception as exc:
+            miss = _judge_cache_miss(exc, scorer)
+            if miss is not None:
+                return error_result("meaning_diff", t0, *miss)
             return error_result(
                 "meaning_diff", t0, ErrorClass.INTERNAL, type(exc).__name__
             )
@@ -611,6 +670,9 @@ def register_meaning_tools(mcp: Any) -> None:
                 concurrency=_JUDGE_HINT,
             )
         except Exception as exc:
+            miss = _judge_cache_miss(exc, scorer)
+            if miss is not None:
+                return error_result("depth_frontier", t0, *miss)
             return error_result(
                 "depth_frontier", t0, ErrorClass.INTERNAL, type(exc).__name__
             )
@@ -629,7 +691,7 @@ def register_meaning_tools(mcp: Any) -> None:
         losses: "list[float] | None" = None,
         pairs: "list[dict] | None" = None,
         scorer: str = "nli",
-        scorer_name: "str | None" = None,
+        scorer_name: OptionalText = None,
         scorer_version: str = "unversioned",
         delta: float = 0.05,
         method: str = "empirical_bernstein",
@@ -768,9 +830,7 @@ def register_meaning_tools(mcp: Any) -> None:
                     loss_definition=loss_definition,
                     evaluation_manifest=evaluation_manifest,
                 )
-                receipt = sign_meaning_risk_receipt(
-                    payload, private_jwk=private_jwk, kid=kid
-                )
+                receipt = _sign(sign_meaning_risk_receipt, payload, private_jwk, kid)
                 public_jwks = _public_jwks_of(private_jwk, kid)
                 # Self-verify through the real verifier before handing it out.
                 verified_payload = sum_verify.verify_meaning_risk_receipt(
@@ -815,7 +875,12 @@ def register_meaning_tools(mcp: Any) -> None:
                 warnings=warnings,
                 concurrency=_JUDGE_HINT if pairs is not None else _VERIFY_HINT,
             )
+        except _SignerRefused as exc:
+            return error_result("mint_meaning_receipt", t0, ErrorClass.SCHEMA, str(exc))
         except Exception as exc:
+            miss = _judge_cache_miss(exc, scorer) if pairs is not None else None
+            if miss is not None:
+                return error_result("mint_meaning_receipt", t0, *miss)
             return error_result(
                 "mint_meaning_receipt", t0, ErrorClass.INTERNAL, type(exc).__name__
             )
@@ -830,9 +895,9 @@ def register_meaning_tools(mcp: Any) -> None:
         kid: str,
         hop_envelopes: "list[dict]",
         end_to_end_losses: "list[float] | None" = None,
-        scorer_name: "str | None" = None,
+        scorer_name: OptionalText = None,
         scorer_version: str = "1",
-        loss_definition: "str | None" = None,
+        loss_definition: OptionalText = None,
         delta: float = 0.05,
         method: str = "hoeffding",
         hops_jwks: "dict | None" = None,
@@ -934,9 +999,7 @@ def register_meaning_tools(mcp: Any) -> None:
                         method=method,
                     )
                 payload = build_chain_payload(hop_envelopes, end_to_end=leg)
-                receipt = sign_chain_receipt(
-                    payload, private_jwk=private_jwk, kid=kid
-                )
+                receipt = _sign(sign_chain_receipt, payload, private_jwk, kid)
                 public_jwks = _public_jwks_of(private_jwk, kid)
                 if isinstance(hops_jwks, dict):
                     for key in hops_jwks.get("keys", []):
@@ -966,6 +1029,8 @@ def register_meaning_tools(mcp: Any) -> None:
                 receipt, public_jwks, verified_payload = (
                     await asyncio.get_running_loop().run_in_executor(None, _mint)
                 )
+            except _SignerRefused as exc:
+                return error_result("mint_chain_receipt", t0, ErrorClass.SCHEMA, str(exc))
             except Exception as exc:
                 return error_result(
                     "mint_chain_receipt", t0, _classify_verify_error(exc),

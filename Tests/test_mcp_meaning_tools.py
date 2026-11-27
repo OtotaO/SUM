@@ -755,3 +755,46 @@ def test_verify_receipt_classes_render_failures_as_signature(server, fixture):
     out = asyncio.run(fn(case["receipt"], case["jwks"]))
     assert out["verified"] is False
     assert out["error_class"] == "signature", out
+
+
+@pytest.mark.parametrize("field", ["kid", "corpus_id"])
+def test_mint_tools_report_a_signer_refusal_as_a_schema_error(server, keypair, field):
+    """sign_jose_envelope refuses a kid that makes the protected header longer
+    than the verifiers take, and a payload over their limit. mint_meaning_receipt
+    returned that as an internal error naming only ValueError, and
+    mint_chain_receipt as an internal error; it is the caller's input, so it is
+    a schema error that gives the reason."""
+    mint = _tool(server, "mint_meaning_receipt")
+    mint_chain = _tool(server, "mint_chain_receipt")
+    base = dict(
+        private_jwk=keypair, kid="mcp-test-key-1", corpus_id="c", transform="t",
+        loss_definition="d", losses=[0.1, 0.2, 0.15, 0.05] * 8,
+        scorer_name="s", scorer_version="1", method="hoeffding",
+    )
+    bad = {"kid": "k" * 400} if field == "kid" else {"corpus_id": "c" * 130_000}
+    out = asyncio.run(mint(**{**base, **bad}))
+    assert out.get("error_class") == "schema", out
+    assert "the limit is" in out["errors"][0]
+    if field != "kid":
+        return
+    hop = asyncio.run(mint(**base))
+    assert "error_class" not in hop, hop
+    out = asyncio.run(mint_chain(
+        private_jwk=keypair, kid="k" * 400, hop_envelopes=[hop["receipt"], hop["receipt"]],
+        end_to_end_losses=[0.2, 0.3, 0.25, 0.15] * 8, scorer_name="s", loss_definition="d",
+    ))
+    assert out.get("error_class") == "schema", out
+    assert "shorten the kid" in out["errors"][0]
+
+
+def test_a_malformed_private_key_is_not_reported_as_a_signer_refusal(server, keypair):
+    """Only sign_jose_envelope's own two limits become a schema error with the
+    reason; a private key that cannot be imported is classified as before."""
+    mint = _tool(server, "mint_meaning_receipt")
+    bad_key = dict(keypair, d="abc")
+    out = asyncio.run(mint(
+        private_jwk=bad_key, kid="mcp-test-key-1", corpus_id="c", transform="t",
+        loss_definition="d", losses=[0.1, 0.2, 0.15, 0.05] * 8,
+        scorer_name="s", scorer_version="1", method="hoeffding",
+    ))
+    assert out.get("error_class") == "internal", out
