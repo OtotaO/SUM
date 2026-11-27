@@ -640,9 +640,9 @@ jobs:
         /tmp/summcp/bin/python -c "from sum_engine_internal.mcp_server.server import build_server; s = build_server(); print('sum-mcp server constructed OK')"
 
     - name: The [mcp] floor (mcp 1.22.0) starts the server and parses a tool call
-      # pyproject's floor is the oldest mcp that starts this server: 1.0.0
-      # has no mcp.server.fastmcp, and 1.2.0 to 1.21.0 fail to import against
-      # current pydantic. Install exactly the floor and call a tool through
+      # pyproject's floor: 1.0.0 has no mcp.server.fastmcp, and 1.2.0 to
+      # 1.21.0 fail to import against current pydantic. Install exactly the
+      # floor and call a tool through
       # FastMCP's argument handling, so a floor that cannot start fails here.
       run: |
         python -m venv /tmp/summcpfloor

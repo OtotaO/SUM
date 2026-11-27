@@ -760,9 +760,10 @@ def test_verify_receipt_classes_render_failures_as_signature(server, fixture):
 @pytest.mark.parametrize("field", ["kid", "corpus_id"])
 def test_mint_tools_report_a_signer_refusal_as_a_schema_error(server, keypair, field):
     """sign_jose_envelope refuses a kid that makes the protected header longer
-    than the verifiers take, and a payload over their limit. The mint tools
-    returned that as an internal error naming only ValueError; it is the
-    caller's input, so it is a schema error that gives the reason."""
+    than the verifiers take, and a payload over their limit. mint_meaning_receipt
+    returned that as an internal error naming only ValueError, and
+    mint_chain_receipt as an internal error; it is the caller's input, so it is
+    a schema error that gives the reason."""
     mint = _tool(server, "mint_meaning_receipt")
     mint_chain = _tool(server, "mint_chain_receipt")
     base = dict(
