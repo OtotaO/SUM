@@ -12,10 +12,10 @@ name: OpenSSF Scorecard (advisory)
 #
 # Permissions:
 #   security-events: write   — upload SARIF to code scanning
-#   id-token: write          — Sigstore-attested publishing of results
-#                              (Scorecard uses keyless signing for the
-#                              public results.json artifact)
 #   contents: read           — minimum default for everything else
+# No id-token: write. scorecard-action needs it only with
+# publish_results: true (an OIDC token signs the published results), and
+# this workflow does not publish. Add it back if publish_results is turned on.
 
 on:
   branch_protection_rule:
@@ -35,7 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write   # SARIF upload to GitHub code scanning
-      id-token: write           # Sigstore keyless signing of results
 
     steps:
     - name: Checkout repo

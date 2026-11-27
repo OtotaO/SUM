@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed if any GitHub Actions workflow pins a third-party action by
+r"""Fail closed if any GitHub Actions workflow pins a third-party action by
 mutable tag instead of full commit SHA.
 
 R0.3 hardening lint. Per ``docs/NEXT_SESSION_PLAYBOOK.md`` R0.3, every
@@ -19,6 +19,18 @@ load-bearing pin.
 Allowed exceptions: GitHub-built-in path-style references (``./local``
 composite actions, ``docker://image:tag``). These are not third-party
 GitHub Actions and are out of scope for the SHA-pin rule.
+
+Only that one-line form is read. Any other line holding the word ``uses``
+fails too, unless the line starts with ``#`` or the word comes after a
+`` #`` on a line with no quote characters: a flow mapping such as
+``- {uses: actions/checkout@v4}``, a quoted key, a block scalar, an anchor,
+a tag, a complex key (``? uses``, with or without a comment), ``uses:`` with
+no ``@ref``, and the word in a ``run:`` script or a ``name:``. The lint is
+stdlib-only and does not parse YAML, so it refuses lines it cannot read;
+rewrite such a line in the one-line form. A YAML parser can still read a
+key this lint does not see, for example one spelled with an escape
+sequence (``"u\x73es"``) or one on a line of a multi-line quoted string
+that starts with ``#``.
 
 Run:
     python scripts/lint_workflow_pins.py
@@ -42,6 +54,22 @@ _SHA_PIN_RE = re.compile(r"@[0-9a-f]{40}(?:\s|$)")
 # (not a SHA). The regex tolerates leading whitespace + hyphens for
 # both `- uses:` and `      uses:` forms.
 _USES_LINE_RE = re.compile(r"^\s*-?\s*uses:\s*([^@\s]+)@([^\s#]+)")
+# The word ``uses`` anywhere on a line, outside a trailing comment. A line
+# the strict pattern above cannot read that holds it is a failure (see the
+# module doc).
+_ANY_USES_WORD_RE = re.compile(r"\buses\b")
+_TRAILING_COMMENT_RE = re.compile(r"\s#.*$")
+
+
+def _without_trailing_comment(line: str) -> str:
+    """The line without a trailing `` #`` comment. A line with a quote
+    character is kept whole: a ``#`` inside a quoted string is not a comment."""
+    if '"' in line or "'" in line:
+        return line
+    return _TRAILING_COMMENT_RE.sub("", line)
+UNREADABLE = "<uses not in the form: - uses: owner/repo@<40-hex sha>>"
+# The one-line form with no @ref, which only a local or docker reference may use.
+_USES_PLAIN_RE = re.compile(r"^\s*-?\s*uses:\s*(\S+)\s*(?:#.*)?$")
 
 
 def _is_local_or_docker(target: str) -> bool:
@@ -66,6 +94,11 @@ def lint_workflow(path: Path) -> list[tuple[int, str, str]]:
 
             m = _USES_LINE_RE.match(line)
             if not m:
+                plain = _USES_PLAIN_RE.match(line)
+                if plain and _is_local_or_docker(plain.group(1)):
+                    continue
+                if _ANY_USES_WORD_RE.search(_without_trailing_comment(line)):
+                    failures.append((lineno, UNREADABLE, line.strip()))
                 continue
             target, ref = m.group(1), m.group(2)
             if _is_local_or_docker(target):
@@ -101,6 +134,10 @@ def main() -> int:
             files_failed += 1
             print(f"\n✗ {path.relative_to(repo_root)}: {len(failures)} unpinned action(s)")
             for lineno, target, ref in failures:
+                if target == UNREADABLE:
+                    print(f"    line {lineno:>3}: {ref}")
+                    print(f"             ↳ {target[1:-1]}, on one line")
+                    continue
                 print(f"    line {lineno:>3}: {target}@{ref}")
                 print(f"             ↳ resolve via: "
                       f"gh api repos/{target}/git/ref/tags/{ref} | jq .object.sha")
