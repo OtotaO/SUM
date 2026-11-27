@@ -1,7 +1,8 @@
 """scripts/lint_workflow_pins.py reads only the one-line `- uses: owner/repo@ref`
-form; any other line holding the word `uses` outside a comment fails, so a tag
-pin cannot pass by being written another way (a flow mapping, an anchor, a
-block scalar, a complex key). A key spelled with a YAML escape is not seen."""
+form; any other line holding the word `uses` outside what it treats as a
+comment fails (a flow mapping, an anchor, a block scalar, a complex key). It
+does not parse YAML, so a key spelled with an escape, or on a line of a
+multi-line quoted string that starts with #, is not seen."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -56,6 +57,8 @@ def test_a_tag_pin_in_the_one_line_form_fails(tmp_path, line):
     "    ? &k uses",                                                      # anchor on a complex key
     "    ? !!str uses",                                                   # tag on a complex key
     "    x: &k uses",                                                     # the anchor an alias key reads
+    '    - {name: "x #", uses: actions/checkout@v4}',                     # a quoted " #" before the key
+    "    - {name: 'x #', uses: actions/checkout@v4}",                     # the same, single-quoted
 ])
 def test_other_spellings_of_a_uses_key_fail(tmp_path, line):
     failures = _lint(tmp_path, line + "\n")
