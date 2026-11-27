@@ -329,6 +329,9 @@ def _sign(signer: Any, payload: dict, private_jwk: dict, kid: str) -> dict:
     try:
         return signer(payload, private_jwk=private_jwk, kid=kid)
     except ValueError as exc:
+        # Only the signer's own two limits; a malformed key stays as it was.
+        if "; the limit is " not in str(exc):
+            raise
         raise _SignerRefused(str(exc)) from exc
 
 

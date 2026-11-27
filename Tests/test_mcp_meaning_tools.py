@@ -785,3 +785,16 @@ def test_mint_tools_report_a_signer_refusal_as_a_schema_error(server, keypair, f
     ))
     assert out.get("error_class") == "schema", out
     assert "shorten the kid" in out["errors"][0]
+
+
+def test_a_malformed_private_key_is_not_reported_as_a_signer_refusal(server, keypair):
+    """Only sign_jose_envelope's own two limits become a schema error with the
+    reason; a private key that cannot be imported is classified as before."""
+    mint = _tool(server, "mint_meaning_receipt")
+    bad_key = dict(keypair, d="abc")
+    out = asyncio.run(mint(
+        private_jwk=bad_key, kid="mcp-test-key-1", corpus_id="c", transform="t",
+        loss_definition="d", losses=[0.1, 0.2, 0.15, 0.05] * 8,
+        scorer_name="s", scorer_version="1", method="hoeffding",
+    ))
+    assert out.get("error_class") == "internal", out

@@ -98,6 +98,27 @@ if not NETWORK_ALLOWED:
 _HEAVY_SLOT = asyncio.Semaphore(1)
 
 
+async def _in_heavy_slot(fn: "Any") -> "Any":
+    """Run fn in a worker thread, one call at a time. asyncio.to_thread cannot
+    stop a thread, so the slot is held until the thread finishes even if the
+    awaiting call is cancelled (a client can cancel a request); otherwise a
+    cancel and retry would start a second rebuild beside the first."""
+    await _HEAVY_SLOT.acquire()
+    try:
+        future = asyncio.ensure_future(asyncio.to_thread(fn))
+    except BaseException:
+        _HEAVY_SLOT.release()
+        raise
+
+    def _done(f: "asyncio.Future") -> None:
+        if not f.cancelled():
+            f.exception()  # retrieved, so a cancelled caller's error is not logged as unhandled
+        _HEAVY_SLOT.release()
+
+    future.add_done_callback(_done)
+    return await asyncio.shield(future)
+
+
 def _tome_axioms(tome_str: str) -> "list[tuple[str, str, str]] | None":
     """(subject, predicate, object) for each canonical tome line, or None
     when there are more than MAX_AXIOM_COUNT. Counted before any prime is
@@ -123,13 +144,22 @@ def _product_of(values) -> int:
 
 
 def _decimal_to_int(text: str) -> int:
-    """int(text). A long run of ASCII digits is converted in balanced halves:
-    before Python 3.12, int() converts a long decimal string in one call whose
-    time grows with the square of its length (3.75 s for 753,000 digits on
-    3.10) and holds the GIL throughout, which stalls the event loop even from
-    a worker thread. Any other spelling goes to int() unchanged."""
-    if len(text) <= 4096 or not (text.isascii() and text.isdigit()):
+    """int(text) for a state_integer. Before Python 3.12, int() converts a long
+    decimal string in one call whose time grows with the square of its length
+    and holds the GIL throughout, which stalls the event loop even from a
+    worker thread. So a long value, after surrounding whitespace and one sign,
+    must be ASCII digits, and is converted in balanced halves; any other long
+    spelling (underscores, other scripts' digits) raises ValueError. A value of
+    up to 4096 characters goes to int() unchanged."""
+    digits = text.strip()
+    sign = -1 if digits[:1] == "-" else 1
+    if digits[:1] in ("+", "-"):
+        digits = digits[1:]
+    if len(digits) <= 4096:
         return int(text)
+    if not (digits.isascii() and digits.isdigit()):
+        raise ValueError("a long state_integer must be ASCII digits")
+    text = digits
     powers: dict[int, int] = {}
 
     def convert(lo: int, hi: int) -> int:
@@ -140,7 +170,7 @@ def _decimal_to_int(text: str) -> int:
             powers[hi - mid] = 10 ** (hi - mid)
         return convert(lo, mid) * powers[hi - mid] + convert(mid, hi)
 
-    return convert(0, len(text))
+    return sign * convert(0, len(text))
 
 
 def _state_of(triples: "list[tuple[str, str, str]]"):
@@ -519,8 +549,7 @@ def build_server() -> FastMCP:
                 except (TypeError, ValueError):
                     return state, None
 
-            async with _HEAVY_SLOT:
-                state, claimed_state = await asyncio.to_thread(_rebuild)
+            state, claimed_state = await _in_heavy_slot(_rebuild)
 
             if claimed_state is None:
                 return error_result(
@@ -736,8 +765,7 @@ def build_server() -> FastMCP:
                     state, sliders=sliders, title=title
                 )
 
-            async with _HEAVY_SLOT:
-                tome_text = await asyncio.to_thread(_render)
+            tome_text = await _in_heavy_slot(_render)
 
             return success_result(
                 "render",

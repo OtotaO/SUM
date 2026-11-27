@@ -200,6 +200,48 @@ def test_the_claimed_state_converts_as_int_does():
         assert _decimal_to_int(text) == int(text), text
     with pytest.raises(ValueError):
         _decimal_to_int("12a")
+    # A long value with a sign or surrounding whitespace is converted in halves
+    # too (it went to int() in one quadratic call); another long spelling is
+    # refused rather than parsed in that one call.
+    long_digits = "".join(rng.choice("0123456789") for _ in range(9000))
+    for text in ("+" + long_digits, "-" + long_digits, " \n" + long_digits + "\t "):
+        assert _decimal_to_int(text) == int(text), text[:3]
+    for text in ("1_" + long_digits, "\u0661" * 5000):
+        with pytest.raises(ValueError):
+            _decimal_to_int(text)
+
+
+def test_a_cancelled_rebuild_keeps_the_slot_until_its_thread_ends():
+    """asyncio.to_thread cannot stop its thread. When a client cancels a
+    verify or render, the slot stays taken until the rebuild finishes, so a
+    retry waits instead of running a second rebuild beside the first."""
+    import threading
+
+    from sum_engine_internal.mcp_server import server as srv
+
+    started, release = threading.Event(), threading.Event()
+
+    def slow():
+        started.set()
+        release.wait(10)
+        return 1
+
+    async def main():
+        first = asyncio.create_task(srv._in_heavy_slot(slow))
+        while not started.is_set():
+            await asyncio.sleep(0.01)
+        first.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await first
+        assert srv._HEAVY_SLOT.locked()
+        second = asyncio.create_task(srv._in_heavy_slot(lambda: 2))
+        await asyncio.sleep(0.1)
+        assert not second.done()
+        release.set()
+        assert await second == 2
+        assert not srv._HEAVY_SLOT.locked()
+
+    asyncio.run(main())
 
 
 def test_a_state_mismatch_is_reported_without_writing_the_rebuilt_state_in_decimal(server, unsigned_bundle):
