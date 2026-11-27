@@ -8,8 +8,10 @@ are the supported ``schema`` string and the surface-specific consumer
 of the verified payload. This module factors the shared core out so a
 schema-aware verifier is ~15 lines wrapping ``verify_jose_envelope``.
 
-Algorithm — exactly mirrors ``docs/RENDER_RECEIPT_FORMAT.md`` §2.1
-and ``docs/TRUST_ROOT_FORMAT.md`` §2.1:
+Algorithm — an outline of ``docs/RENDER_RECEIPT_FORMAT.md`` §2.1 and
+``docs/TRUST_ROOT_FORMAT.md`` §2.1, which give every check (the key type
+at step 1, the payload limit at step 2, the protected-header rule at
+step 3, which the code below labels Steps 3.5 to 3.8):
 
     Step 0    shape gate         — envelope is a dict; required fields present.
     Step 0.5  schema gate        — forward-compat: envelope.schema must equal
@@ -62,6 +64,46 @@ DEFAULT_KNOWN_CRIT_EXTENSIONS: frozenset[str] = frozenset({"b64"})
 # missing/malformed headers. Adding an algorithm requires a spec
 # PR + cross-runtime K-matrix gate; this is not a config knob.
 SUPPORTED_SIGNATURE_ALGORITHMS: frozenset[str] = frozenset({"EdDSA"})
+
+# Size limits applied here, before joserfc, and in the three JS verifiers.
+# joserfc's own limits vary by version (1.8.0 refuses a detached payload over
+# 128,000 bytes and 1.6.8 does not), and the JS verifiers had none.
+MAX_PROTECTED_HEADER_B64_CHARS = 512
+MAX_PAYLOAD_JCS_BYTES = 128_000
+
+
+def _is_http_url(v: object) -> bool:
+    return isinstance(v, str) and v.startswith(("http://", "https://"))
+
+
+def _is_str_list(v: object) -> bool:
+    return isinstance(v, list) and all(isinstance(x, str) for x in v)
+
+
+# The registered JWS header names (RFC 7515 section 4.1, plus b64 from
+# RFC 7797) with the type joserfc requires of each. Python refused a wrong
+# type through joserfc, as signature_invalid, and the JS verifiers accepted
+# it; both now refuse it as malformed_jws before the signature check. alg is
+# checked against the algorithm registry instead.
+_REGISTERED_HEADER_TYPES: tuple[tuple[str, Any, str], ...] = (
+    ("jku", _is_http_url, "an http or https URL string"),
+    ("jwk", lambda v: isinstance(v, dict), "an object"),
+    ("kid", lambda v: isinstance(v, str), "a string"),
+    ("x5u", _is_http_url, "an http or https URL string"),
+    ("x5c", _is_str_list, "an array of strings"),
+    ("x5t", lambda v: isinstance(v, str), "a string"),
+    ("x5t#S256", lambda v: isinstance(v, str), "a string"),
+    ("typ", lambda v: isinstance(v, str), "a string"),
+    ("cty", lambda v: isinstance(v, str), "a string"),
+    ("crit", _is_str_list, "an array of strings"),
+    ("b64", lambda v: isinstance(v, bool), "a boolean"),
+)
+
+
+def _refuse_json_constant(name: str) -> Any:
+    # json.loads reads NaN, Infinity and -Infinity, which are not JSON
+    # (RFC 8259) and which JSON.parse refuses.
+    raise ValueError(f"{name} is not a JSON value")
 
 
 class JoseEnvelopeErrorClass:
@@ -328,6 +370,12 @@ def verify_jose_envelope(
             JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
             f"payload could not be JCS-canonicalized: {e}",
         ) from e
+    if len(canonical_bytes) > MAX_PAYLOAD_JCS_BYTES:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_RECEIPT,
+            f"payload is {len(canonical_bytes)} bytes after JCS "
+            f"canonicalization; the limit is {MAX_PAYLOAD_JCS_BYTES}",
+        )
 
     # ---- Step 3: split detached JWS ----
     parts = jws_str.split(".")
@@ -349,9 +397,18 @@ def verify_jose_envelope(
             JoseEnvelopeErrorClass.MALFORMED_JWS,
             "protected header is not canonical unpadded base64url",
         )
+    if len(proto) > MAX_PROTECTED_HEADER_B64_CHARS:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.MALFORMED_JWS,
+            f"protected header is {len(proto)} base64url characters; the "
+            f"limit is {MAX_PROTECTED_HEADER_B64_CHARS}",
+        )
     try:
         header_raw = _b64url_decode(proto)
-        header = json.loads(header_raw.decode("utf-8"))
+        # Strict UTF-8 (a BOM stays U+FEFF, which json.loads refuses), and no
+        # NaN or Infinity: the JS verifiers decode the same way.
+        header = json.loads(header_raw.decode("utf-8"),
+                            parse_constant=_refuse_json_constant)
     except Exception as e:  # noqa: BLE001
         raise JoseEnvelopeError(
             JoseEnvelopeErrorClass.MALFORMED_JWS,
@@ -402,6 +459,30 @@ def verify_jose_envelope(
             f"supported algorithm registry "
             f"({sorted(SUPPORTED_SIGNATURE_ALGORITHMS)}); see "
             f"docs/ALGORITHM_REGISTRY.md",
+        )
+
+    # ---- Step 3.7: registered header member types ----
+    for name, has_type, wanted in _REGISTERED_HEADER_TYPES:
+        if name in header and not has_type(header[name]):
+            raise JoseEnvelopeError(
+                JoseEnvelopeErrorClass.MALFORMED_JWS,
+                f"protected header {name} must be {wanted}",
+            )
+
+    # ---- Step 3.8: unencoded-payload invariants, before the signature ----
+    # The same check as step 6, made before verifying so the class does not
+    # depend on how a library builds the signing input for another b64 value
+    # (joserfc follows b64, the JS verifiers always pass the raw bytes).
+    if header.get("b64") is not False:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED,
+            f"expected b64=False (detached payload encoding), "
+            f"got b64={header.get('b64')!r}",
+        )
+    if not isinstance(header.get("crit"), list) or "b64" not in header["crit"]:
+        raise JoseEnvelopeError(
+            JoseEnvelopeErrorClass.HEADER_INVARIANT_VIOLATED,
+            f'expected crit array containing "b64", got {header.get("crit")!r}',
         )
 
     # ---- Step 4: import key ----
@@ -641,6 +722,12 @@ def sign_jose_envelope(
         )
 
     canonical_bytes = canonicalize(payload)
+    if len(canonical_bytes) > MAX_PAYLOAD_JCS_BYTES:
+        # The verifiers refuse it, so do not sign it.
+        raise ValueError(
+            f"payload is {len(canonical_bytes)} bytes after JCS "
+            f"canonicalization; the limit is {MAX_PAYLOAD_JCS_BYTES}"
+        )
 
     protected = {
         "alg": "EdDSA",
@@ -668,6 +755,13 @@ def sign_jose_envelope(
             protected, canonical_bytes, key, algorithms=["EdDSA"]
         )
     detached = detach_compact_content(compact)
+    header_chars = len(detached.split(".", 1)[0])
+    if header_chars > MAX_PROTECTED_HEADER_B64_CHARS:
+        # The verifiers refuse it (a long kid makes it so), so do not return it.
+        raise ValueError(
+            f"protected header is {header_chars} base64url characters; "
+            f"the limit is {MAX_PROTECTED_HEADER_B64_CHARS} (shorten the kid)"
+        )
 
     return {
         "kid": kid,

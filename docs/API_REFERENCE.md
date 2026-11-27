@@ -231,7 +231,7 @@ The full verifier algorithm is documented in [`docs/RENDER_RECEIPT_FORMAT.md`](R
 1. **Fetch the JWKS** from `https://sum-demo.ototao.workers.dev/.well-known/jwks.json` (or the publisher's equivalent). Pick the JWK whose `kid` matches the receipt's `kid`. Reject if not found.
 2. **Check revocation**: fetch `/.well-known/revoked-kids.json`. Reject if, for any entry whose `kid` is the receipt's `kid`, the receipt's `signed_at` ≥ that entry's `effective_revocation_at`, or either time is not in the receipt timestamp form ([`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §6.1).
 3. **JCS-canonicalise** `receipt.payload`. (Use `canonicalize` in JS, `sum_engine_internal/infrastructure/jcs.py` in Python — both are byte-identical.)
-4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` accepts a respelled or padded signature, WebCrypto a respelled or padded `x`, and a header the issuer signed in such a spelling verifies; SUM's own verifiers reject all of them. Also require the key's other members to allow EdDSA verification (no private member `d`; `key_ops`, when present, distinct strings that include `verify`; `use`, when present, `sig`; `alg`, when present, `EdDSA` or `Ed25519`), and build the public key from `kty`, `crv` and `x` alone: some JOSE libraries build the key from `d` when it is present, without comparing it with `x`. In Node:
+4. **Verify the JWS** as detached over those canonical bytes. First require the protected header, the signature and the key's `x` to be canonical unpadded base64url (base64url characters only, no `=`, spare low bits of the last character zero; signature 86 characters, `x` 43): `flattenedVerify` accepts a respelled or padded signature, WebCrypto a respelled or padded `x`, and a header the issuer signed in such a spelling verifies; SUM's own verifiers reject all of them. Also require the key's other members to allow EdDSA verification (no private member `d`; `key_ops`, when present, distinct strings that include `verify`; `use`, when present, `sig`; `alg`, when present, `EdDSA` or `Ed25519`), and build the public key from `kty`, `crv` and `x` alone: some JOSE libraries build the key from `d` when it is present, without comparing it with `x`. Apply the protected-header rule of [`RENDER_RECEIPT_FORMAT.md`](RENDER_RECEIPT_FORMAT.md) §2.1 step 3 before verifying (at most 512 characters, UTF-8 JSON without a BOM, NaN or Infinity, the registered header names' types, `b64` false and `crit` including `b64`), and refuse a canonical payload over 128,000 bytes. In Node:
    ```js
    import { flattenedVerify, importJWK } from "jose";
    const publicKey = await importJWK({ kty: jwk.kty, crv: jwk.crv, x: jwk.x }, "EdDSA");
@@ -633,8 +633,9 @@ async function renderAndVerify(triples, sliders) {
   // 4. Verify the detached JWS over the canonical payload bytes. Before this,
   //    require protectedHeader, signature and jwk.x to be canonical unpadded
   //    base64url, and the key to carry no d and only key_ops, use and alg
-  //    values that allow EdDSA verification, as SUM's verifiers do (see the
-  //    format docs, step 3).
+  //    values that allow EdDSA verification, and apply the protected-header
+  //    rule and the 128,000-byte payload limit, as SUM's verifiers do (see
+  //    the format docs, steps 2 and 3).
   const canonicalBytes = new TextEncoder().encode(canonicalize(payload));
   const [protectedHeader, , signature] = jws.split(".");
   // Build the key from x alone, so a d or other member cannot change it.

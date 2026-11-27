@@ -133,10 +133,13 @@ The verifier algorithm is identical to the render-receipt verifier from [`docs/R
 
 ```
 1. Parse manifest.kid. Look up the matching key in trust-root jwks.keys.
-   If no match → REJECT (unknown_kid).
+   If no match → REJECT (unknown_kid). The key MUST be an Ed25519 public
+   key (kty "OKP", crv "Ed25519"); otherwise → REJECT (malformed_jwks).
 
 2. Take manifest.payload (the object, not the string). JCS-canonicalise it
-   (RFC 8785). Encode to UTF-8 bytes. This is the detached payload.
+   (RFC 8785). Encode to UTF-8 bytes. This is the detached payload. The
+   bytes MUST number at most 128,000; otherwise → REJECT (malformed_receipt,
+   the class the trust-root verifier names MALFORMED_MANIFEST).
 
 3. Split manifest.jws on "." → [protected_b64, middle, signature_b64].
    The middle segment MUST be empty (detached payload encoding).
@@ -151,6 +154,12 @@ The verifier algorithm is identical to the render-receipt verifier from [`docs/R
    "verify"; use, when present, "sig"; alg, when present, "EdDSA" or
    "Ed25519". Otherwise → REJECT (malformed_jwks). Build the public key
    from kty, crv and x alone.
+   Before verifying the signature, apply the render receipt's protected
+   header rule (RENDER_RECEIPT_FORMAT.md §2.1, step 3): at most 512
+   characters, UTF-8 without a BOM, a JSON object without NaN or
+   Infinity, the registered names' types, b64 false and crit including
+   "b64" (malformed_jws, crit_unknown_extension, unsupported_alg or
+   header_invariant_violated).
 
 4. Construct the flattened JWS object:
    { protected: protected_b64, payload: <JCS bytes from step 2>, signature: signature_b64 }
